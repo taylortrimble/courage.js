@@ -1,0 +1,21 @@
+#
+# .gitignore
+# courage.js
+#
+# Copyright (c) 2014 The New Tricks, LLC.
+# MIT License.
+#
+
+# Dependencies
+bower_components/
+node_modules/
+
+# Development
+coverage/
+docs/
+*.log
+*.orig
+
+# Build
+build/
+dist/
