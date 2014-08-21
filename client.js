@@ -19,8 +19,8 @@ TheNewTricks.Courage = (function(Courage) {
 
   Courage.Client = function Client(dsn) {
 
-    // Container for private variables.
-    var my = this._private = {};
+    // Private members.
+    var my = this._private_vars = {};
 
     // Parse DSN.
     my.dsn = {};
@@ -39,53 +39,75 @@ TheNewTricks.Courage = (function(Courage) {
       localStorage[DEVICE_ID_KEY] = TheNewTricks.UUID.unparse(my.deviceId);
     }
 
-    // Set default values.
-    my.connection = null;
+    // Set up the connection manager.
+    var url = 'ws://' + my.dsn.host + ':' + my.dsn.port + '/';
+    my.connectionManager = new Private.ConnectionManager(url);
+
+    // Initialize a data structure to map channel ids to callbacks.
+    my.handlers = {};
   };
   
   Courage.Client.prototype = {
 
     bind: function bind(channel, callback) {
 
-      // Access to private variables.
-      var my = this._private;
+      // Access to private members.
+      var my = this._private_vars;
+      var helpers = this._private_methods;
 
-      // Make the WebSocket connection if it doesn't already exist.
-      var url = 'ws://' + my.dsn.host + ':' + my.dsn.port + '/';
-      my.connection = new WebSocket(url);
+      my.handlers[channel.toLowerCase()] = callback;
 
-      // Configure the WebSocket connection.
-      my.connection.binaryType = 'arraybuffer';
+      // If we're connected, subscribe right away. If not, we'll subscribe automatically
+      // when we open the connection.
+      if (my.connectionManager.connected) {
+        var uuid = TheNewTricks.UUID.parse(channel);
+        helpers.subscribeToChannel.bind(this)(uuid);
+      }
 
-      my.connection.onerror = function(error) {
-        console.log('WebSocket error: ' + error);
+      // Start and configure the connection manager for good measure.
+      my.connectionManager.start();
+      my.connectionManager.onopen = helpers.onConnectionOpen.bind(this);
+      my.connectionManager.onmessage = function(e) {
+        console.log(e.data);
       };
+    },
 
-      my.connection.onclose = function() {
-        console.log('WebSocket closed');
-      };
+    _private_methods: {
 
-      // Form and send the subscribe request.
-      my.connection.onopen = function() {
-        console.log('WebSocket opened');
+      onConnectionOpen: function onConnectionOpen() {
+
+        // Access to private members.
+        var my = this._private_vars;
+        var helpers = this._private_methods;
+
+        // Subscribe to each channel we are bound to.
+        for (var channelId in my.handlers) {
+          if (my.handlers.hasOwnProperty(channelId)) {
+
+            var uuid = TheNewTricks.UUID.parse(channelId);
+            helpers.subscribeToChannel.bind(this)(uuid);
+          }
+        }
+      },
+
+      subscribeToChannel: function subscribeToChannel(channelId) {
+
+        // Access to private members.
+        var my = this._private_vars;
+        var helpers = this._private_methods;
 
         // Form the subscribe request.
         var username = my.dsn.username,
             password = my.dsn.password,
             providerId = my.dsn.providerId,
-            channelId = TheNewTricks.UUID.parse(channel),
+            channelId = channelId,
             deviceId = my.deviceId,
             options = 0;
 
         var request = Private.formatSubscribeRequest(username, password, providerId, channelId, deviceId, options);
 
-        my.connection.send(request.buffer);
-      };
-
-      // Handle received messages.
-      my.connection.onmessage = function(e) {
-        console.log(e.data);
-      };
+        my.connectionManager.send(request.buffer);
+      },
     },
   };
 
