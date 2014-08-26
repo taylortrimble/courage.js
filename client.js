@@ -68,7 +68,9 @@ TheNewTricks.Courage = (function(Courage) {
       my.connectionManager.start();
       my.connectionManager.onopen = helpers.onConnectionOpen.bind(this);
       my.connectionManager.onmessage = function(e) {
-        console.log(e.data);
+
+        uint8View = new Uint8Array(e.data);
+        console.log(uint8View);
       };
     },
 
