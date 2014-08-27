@@ -16,6 +16,25 @@ TheNewTricks.Courage = (function(Courage) {
   var INITIAL_TIMEOUT_INTERVAL =    100,    // 100 ms.
       CEILING_TIMEOUT_INTERVAL = 300000;    // 5 min.
 
+  // The ConnectionManager connects to a service over a WebSocket.
+  //
+  // It can send and receive binary messages.
+  // If the connection is lost, the ConnectionManager uses an exponential backoff strategy
+  // to reconnect to the service.
+  //
+  // The ConnectionManager is started with a WebSocket URL:
+  //     var connectionManager = new ConnectionManager('ws://rt.thenewtricks.com:9090/');
+  //
+  // It can then be started with `start`:
+  //     connectionManager.start();
+  //
+  // Messages can be sent with `send`:
+  //     connectionManager.send(data);
+  //
+  // The following callbacks exist:
+  //   - onopen
+  //   - onmessage
+  //   - onerror
   Private.ConnectionManager = function ConnectionManager(url) {
 
     // Public members.
@@ -36,13 +55,17 @@ TheNewTricks.Courage = (function(Courage) {
 
   Private.ConnectionManager.prototype = {
 
+    // `start` starts the ConnectionManager.
+    //
+    // Start may be called multiple times. The connection manager will only be started once,
+    // and cannot be stopped.
     start: function start() {
 
       // Access to private members.
       var my = this._private_vars;
       var helpers = this._private_methods;
 
-      // If we have an active connection, we're already started.
+      // Return if we've already started.
       if (my.started) {
         return;
       }
@@ -52,6 +75,7 @@ TheNewTricks.Courage = (function(Courage) {
       helpers.connect.bind(this)();
     },
 
+    // `send` sends binary data over the WebSocket connection.
     send: function send(data) {
 
       // Access to private members.
@@ -63,6 +87,10 @@ TheNewTricks.Courage = (function(Courage) {
 
     _private_methods: {
 
+      // `connect` attempts to open a new WebSocket.
+      //
+      // The WebSocket is configured with the appropriate callbacks to enable reconnection
+      // and calling the ConnectionManager's callback functions.
       connect: function connect() {
 
         // Access to private members.
@@ -77,6 +105,7 @@ TheNewTricks.Courage = (function(Courage) {
         my.connection.onerror = helpers.onWebSocketError.bind(this);
       },
 
+      // Mark the connection as connected and clear the retry timer.
       onWebSocketOpen: function onWebSocketOpen() {
 
         // Access to private members.
@@ -91,6 +120,8 @@ TheNewTricks.Courage = (function(Courage) {
         this.onopen();
       },
 
+      // Mark the connection as disconnected and start the retry timer
+      // with an exponentially increasing interval with a ceiling.
       onWebSocketClose: function onWebSocketClose(event) {
 
         // Access to private members.
@@ -106,6 +137,7 @@ TheNewTricks.Courage = (function(Courage) {
         my.interval = Math.min(my.interval, CEILING_TIMEOUT_INTERVAL);
       },
 
+      // Pass the message on to the callback.
       onWebSocketMessage: function onWebSocketMessage(event) {
 
         // Access to private members.
@@ -115,6 +147,7 @@ TheNewTricks.Courage = (function(Courage) {
         this.onmessage(event);
       },
 
+      // Pass the error on to the callback.
       onWebSocketError: function onWebSocketError(error) {
 
         // Access to private members.

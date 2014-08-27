@@ -13,6 +13,15 @@ TheNewTricks.Courage = (function(Courage) {
   // Class private container.
   var Private = Courage._private = Courage._private || {};
 
+  // formatSubscribeRequest returns a Uint8Array filled with a Subscribe Request payload, with header.
+  //
+  // Field order is:
+  //   - username    (string)
+  //   - password    (string)
+  //   - providerId  (uuid)
+  //   - channelId   (uuid)
+  //   - deviceId    (uuid)
+  //   - options     (uint8)
   Private.formatSubscribeRequest = function formatSubscribeRequest(username, password, providerId, channelId, deviceId, options) {
 
     var usernameField = Private.formatString(username);
@@ -52,8 +61,14 @@ TheNewTricks.Courage = (function(Courage) {
     return uint8View;
   };
 
-  // TODO: Validate string byte length.
+  // formatString returns a Uint8Array filled with a formatted string payload, without header.
+	//
+	// A formatted string is a single byte, which specifies the string length,
+	// followed by the bytes of the string. Strings must be smaller than 255 bytes,
+	// and may be unicode.
   Private.formatString = function formString(s) {
+
+    // TODO: Validate string byte length.
 
     // Encode the UFT-8 string.
     var encoder = new TextEncoder('utf-8');
@@ -76,6 +91,10 @@ TheNewTricks.Courage = (function(Courage) {
     return uint8View;
   };
 
+  // formatUUID returns a Uint8Array filled with a formatted UUID, without header.
+	//
+	// UUIDs are 16 bytes in big endian format, and are based on
+	// RFC 4122 and DCE 1.1: Authentication and Security Services.
   Private.formatUUID = function formUUID(uuid) {
     return uuid;
   };

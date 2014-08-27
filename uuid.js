@@ -10,6 +10,10 @@ var TheNewTricks = TheNewTricks || {};
 
 TheNewTricks.UUID = (function(UUID) {
 
+  // Parse parses a UUID of the format:
+  //    9e561659-a4ce-43ea-803c-a0181224ce34
+  //
+  // into a Uint8Array. It is case-insensitive.
   var parse = function parse(s) {
 
     // Validate s.
@@ -31,6 +35,12 @@ TheNewTricks.UUID = (function(UUID) {
     return uuid;
   };
 
+  // generateV4 attempts to generate a cryptographically-secure version 4 UUID.
+  //
+  // If it is available, this function will use crypto.getRandomValues.
+  // If not, Math.random is used.
+  //
+  // A Uint8Array is returned.
   var generateV4 = function generateV4() {
 
     var uuid = new Uint8Array(16);
@@ -50,6 +60,8 @@ TheNewTricks.UUID = (function(UUID) {
     return uuid;
   };
 
+  // Unparse turns a UUID represented by a 16-byte Uint8Array into a string formatted as:
+  //    9e561659-a4ce-43ea-803c-a0181224ce34
   var unparse = function unparse(uuid){
 
     var pb = function paddedByte(b) {
