@@ -32,18 +32,14 @@ TheNewTricks.Courage = (function(Courage) {
   //     client.bind('28955ba1-fc5d-4553-9d1b-c751d5110c82', function(data) { console.log(data); });
   Courage.Client = function Client(dsn) {
 
-    // Private members.
-    var my = this._private = {};
-
     // Parse the DSN, get the persistent device id, and initialize a data structure to map channel ids
-    // to callbacks.
-    my.dsn = parseDSN(dsn);
-    my.deviceId = persistentDeviceId();
-    my.handlers = {};
-
-    // Set up the connection manager.
-    var url = 'ws://' + my.dsn.host + ':' + my.dsn.port + '/';
-    my.connectionManager = new PrivateCourage.ConnectionManager(url);
+    // to callbacks. Store as private members.
+    this._private = {
+      dsn: parseDSN(dsn),
+      deviceId: persistentDeviceId(),
+      handlers: {},
+      connectionManager: null,
+    };
   };
   
   Courage.Client.prototype = {
@@ -63,22 +59,25 @@ TheNewTricks.Courage = (function(Courage) {
 
       my.handlers[channelId.toLowerCase()] = callback;
 
-      // If we're connected, subscribe right away. If not, all channels get subscribed to automatically
-      // when a new connection is opened.
-      if (my.connectionManager.connected) {
+      // If we haven't started the connection manager, start it now. The new channel will be
+      // subscribed to automatically.
+      //
+      // Otherwise, if we're connected, subscribe right away. If we're started and not connected,
+      // then no-op; all channels get subscribed to automatically when the connection is reopened.
+      if (!my.connectionManager) {
+
+        var url = 'ws://' + my.dsn.host + ':' + my.dsn.port + '/';
+        my.connectionManager = new PrivateCourage.ConnectionManager(url);
+
+        my.connectionManager.onopen = onConnectionOpen.bind(this);
+        my.connectionManager.onmessage = onConnectionMessage.bind(this);
+
+      } else if (my.connectionManager.connected) {
+
         var uuid = TheNewTricks.UUID.parse(channelId);
         subscribeToChannel.bind(this)(uuid);
+
       }
-
-      // Start and configure the connection manager for good measure. If it's already started, this is
-      // a no-op, so it's safe to just calls this every time.
-      my.connectionManager.start();
-      my.connectionManager.onopen = onConnectionOpen.bind(this);
-      my.connectionManager.onmessage = function(e) {
-
-        uint8View = new Uint8Array(e.data);
-        console.log(uint8View);
-      };
     },
   };
 
@@ -140,6 +139,12 @@ TheNewTricks.Courage = (function(Courage) {
         subscribeToChannel.bind(this)(uuid);
       }
     }
+  }
+
+  function onConnectionMessage(event) {
+
+    uint8View = new Uint8Array(event.data);
+    console.log(uint8View);
   }
 
   return Courage;

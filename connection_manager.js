@@ -25,9 +25,6 @@ TheNewTricks.Courage = (function(Courage) {
   // The ConnectionManager is started with a WebSocket URL:
   //     var connectionManager = new ConnectionManager('ws://rt.thenewtricks.com:9090/');
   //
-  // It can then be started with `start`:
-  //     connectionManager.start();
-  //
   // Messages can be sent with `send`:
   //     connectionManager.send(data);
   //
@@ -44,35 +41,18 @@ TheNewTricks.Courage = (function(Courage) {
     this.onerror   = function(){};
 
     // Private members.
-    var my = this._private = {};
+    this._private = {
+      url: url,
+      connection: null,
+      timer: null,
+      interval: INITIAL_TIMEOUT_INTERVAL,
+    };
 
-    my.url = url;
-    my.started = false;
-    my.connection = null;
-    my.timer = null;
-    my.interval = INITIAL_TIMEOUT_INTERVAL;
+    // Connect to the service. Automatically retries when connection is lost.
+    connect.bind(this)();
   };
 
   PrivateCourage.ConnectionManager.prototype = {
-
-    // `start` starts the ConnectionManager.
-    //
-    // Start may be called multiple times. The connection manager will only be started once,
-    // and cannot be stopped.
-    start: function start() {
-
-      // Access to private members.
-      var my = this._private;
-
-      // Return if we've already started.
-      if (my.started) {
-        return;
-      }
-
-      my.started = true;
-
-      connect.bind(this)();
-    },
 
     // `send` sends binary data over the WebSocket connection.
     send: function send(data) {
@@ -138,10 +118,6 @@ TheNewTricks.Courage = (function(Courage) {
 
   // Pass the error on to the callback.
   function onWebSocketError(error) {
-
-    // Access to private members.
-    var my = this._private;
-
     this.onerror(error);
   }
 
