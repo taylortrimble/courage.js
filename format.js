@@ -11,7 +11,7 @@ var TheNewTricks = TheNewTricks || {};
 TheNewTricks.Courage = (function(Courage) {
 
   // Class private container.
-  var Private = Courage._private = Courage._private || {};
+  var PrivateCourage = Courage._private = Courage._private || {};
 
   // formatSubscribeRequest returns a Uint8Array filled with a Subscribe Request payload, with header.
   //
@@ -22,13 +22,13 @@ TheNewTricks.Courage = (function(Courage) {
   //   - channelId   (uuid)
   //   - deviceId    (uuid)
   //   - options     (uint8)
-  Private.formatSubscribeRequest = function formatSubscribeRequest(username, password, providerId, channelId, deviceId, options) {
+  PrivateCourage.formatSubscribeRequest = function formatSubscribeRequest(username, password, providerId, channelId, deviceId, options) {
 
-    var usernameField = Private.formatString(username);
-    var passwordField = Private.formatString(password);
-    var providerIdField = Private.formatUUID(providerId);
-    var channelIdField = Private.formatUUID(channelId);
-    var deviceIdField = Private.formatUUID(deviceId);
+    var usernameField = PrivateCourage.formatString(username);
+    var passwordField = PrivateCourage.formatString(password);
+    var providerIdField = PrivateCourage.formatUUID(providerId);
+    var channelIdField = PrivateCourage.formatUUID(channelId);
+    var deviceIdField = PrivateCourage.formatUUID(deviceId);
 
     // Initialize the buffer, its views, and a cursor.
     var headerLength = Uint8Array.BYTES_PER_ELEMENT;
@@ -66,7 +66,7 @@ TheNewTricks.Courage = (function(Courage) {
 	// A formatted string is a single byte, which specifies the string length,
 	// followed by the bytes of the string. Strings must be smaller than 255 bytes,
 	// and may be unicode.
-  Private.formatString = function formString(s) {
+  PrivateCourage.formatString = function formString(s) {
 
     // TODO: Validate string byte length.
 
@@ -95,7 +95,7 @@ TheNewTricks.Courage = (function(Courage) {
 	//
 	// UUIDs are 16 bytes in big endian format, and are based on
 	// RFC 4122 and DCE 1.1: Authentication and Security Services.
-  Private.formatUUID = function formUUID(uuid) {
+  PrivateCourage.formatUUID = function formUUID(uuid) {
     return uuid;
   };
 

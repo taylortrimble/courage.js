@@ -11,7 +11,7 @@ var TheNewTricks = TheNewTricks || {};
 TheNewTricks.Courage = (function(Courage) {
 
   // Class private container.
-  var Private = Courage._private = Courage._private || {};
+  var PrivateCourage = Courage._private = Courage._private || {};
 
   var DSN_KEYS      = 'username password host port providerId'.split(' '),
       DSN_PATTERN   = /^([0-9a-z-]+):([0-9a-z-]+)@([0-9a-z-\.]+):([0-9]+)\/([0-9a-z-]+)$/i,
@@ -26,40 +26,24 @@ TheNewTricks.Courage = (function(Courage) {
   //     {username}:{password}@{host}:{port}/{providerId}
   //
   // All fields are required. Here is an example:
-  //     sessionpubkey:sessionprivkey@rt.thenewtricks.com:9090/928308cd-eff8-4ef6-a154-f8268ec663d5
+  //     sessionid:sessionkey@rt.thenewtricks.com:9090/928308cd-eff8-4ef6-a154-f8268ec663d5
   //
   // The app can then use the `bind` method to subscribe to events from a channel:
   //     client.bind('28955ba1-fc5d-4553-9d1b-c751d5110c82', function(data) { console.log(data); });
   Courage.Client = function Client(dsn) {
 
     // Private members.
-    var my = this._private_vars = {};
+    var my = this._private = {};
 
-    // Parse DSN.
-    my.dsn = {};
-    var m = DSN_PATTERN.exec(dsn);
-    // TODO: fail if pattern fails to match.
-
-    for (var i = 0; i < DSN_KEYS.length; i++) {
-      my.dsn[DSN_KEYS[i]] = m[i + 1] || '';
-    }
-
-    my.dsn.providerId = TheNewTricks.UUID.parse(my.dsn.providerId);
-
-    // Each browser is identified by a persistent, unique UUID, even if they belong to the same
-    // user. Retrieve the device id from local storage if it exists, or generate a new one.
-    my.deviceId = TheNewTricks.UUID.parse(localStorage[DEVICE_ID_KEY]);
-    if (!my.deviceId) {
-      my.deviceId = TheNewTricks.UUID.generateV4();
-      localStorage[DEVICE_ID_KEY] = TheNewTricks.UUID.unparse(my.deviceId);
-    }
+    // Parse the DSN, get the persistent device id, and initialize a data structure to map channel ids
+    // to callbacks.
+    my.dsn = parseDSN(dsn);
+    my.deviceId = persistentDeviceId();
+    my.handlers = {};
 
     // Set up the connection manager.
     var url = 'ws://' + my.dsn.host + ':' + my.dsn.port + '/';
-    my.connectionManager = new Private.ConnectionManager(url);
-
-    // Initialize a data structure to map channel ids to callbacks.
-    my.handlers = {};
+    my.connectionManager = new PrivateCourage.ConnectionManager(url);
   };
   
   Courage.Client.prototype = {
@@ -75,8 +59,7 @@ TheNewTricks.Courage = (function(Courage) {
     bind: function bind(channelId, callback) {
 
       // Access to private members.
-      var my = this._private_vars;
-      var helpers = this._private_methods;
+      var my = this._private;
 
       my.handlers[channelId.toLowerCase()] = callback;
 
@@ -84,58 +67,80 @@ TheNewTricks.Courage = (function(Courage) {
       // when a new connection is opened.
       if (my.connectionManager.connected) {
         var uuid = TheNewTricks.UUID.parse(channelId);
-        helpers.subscribeToChannel.bind(this)(uuid);
+        subscribeToChannel.bind(this)(uuid);
       }
 
       // Start and configure the connection manager for good measure. If it's already started, this is
       // a no-op, so it's safe to just calls this every time.
       my.connectionManager.start();
-      my.connectionManager.onopen = helpers.onConnectionOpen.bind(this);
+      my.connectionManager.onopen = onConnectionOpen.bind(this);
       my.connectionManager.onmessage = function(e) {
 
         uint8View = new Uint8Array(e.data);
         console.log(uint8View);
       };
     },
-
-    _private_methods: {
-
-      onConnectionOpen: function onConnectionOpen() {
-
-        // Access to private members.
-        var my = this._private_vars;
-        var helpers = this._private_methods;
-
-        // Subscribe to each channel we are bound to.
-        for (var channelId in my.handlers) {
-          if (my.handlers.hasOwnProperty(channelId)) {
-
-            var uuid = TheNewTricks.UUID.parse(channelId);
-            helpers.subscribeToChannel.bind(this)(uuid);
-          }
-        }
-      },
-
-      subscribeToChannel: function subscribeToChannel(channelId) {
-
-        // Access to private members.
-        var my = this._private_vars;
-        var helpers = this._private_methods;
-
-        // Form the subscribe request.
-        var username = my.dsn.username,
-            password = my.dsn.password,
-            providerId = my.dsn.providerId,
-            channelId = channelId,
-            deviceId = my.deviceId,
-            options = 0;
-
-        var request = Private.formatSubscribeRequest(username, password, providerId, channelId, deviceId, options);
-
-        my.connectionManager.send(request.buffer);
-      },
-    },
   };
+
+  // parseDSN converts a DSN string to its component parts.
+  function parseDSN(dsn) {
+
+    var parsed = {};
+    var m = DSN_PATTERN.exec(dsn);
+    // TODO: fail if pattern fails to match.
+
+    for (var i = 0; i < DSN_KEYS.length; i++) {
+      parsed[DSN_KEYS[i]] = m[i + 1] || '';
+    }
+
+    parsed.providerId = TheNewTricks.UUID.parse(parsed.providerId);
+
+    return parsed;
+  }
+
+  // Each browser is identified by a persistent, unique UUID, even if they belong to the same
+  // user. Retrieve the device id from local storage if it exists, or generate a new one.
+  function persistentDeviceId() {
+
+    var deviceId = TheNewTricks.UUID.parse(localStorage[DEVICE_ID_KEY]);
+    if (!deviceId) {
+      deviceId = TheNewTricks.UUID.generateV4();
+      localStorage[DEVICE_ID_KEY] = TheNewTricks.UUID.unparse(deviceId);
+    }
+
+    return deviceId;
+  }
+
+  function subscribeToChannel(channelId) {
+
+      // Access to private members.
+      var my = this._private;
+
+      // Form the subscribe request.
+      var request = PrivateCourage.formatSubscribeRequest(my.dsn.username,
+                                                          my.dsn.password,
+                                                          my.dsn.providerId,
+                                                          channelId,
+                                                          my.deviceId,
+                                                          0);
+
+      my.connectionManager.send(request.buffer);
+    }
+
+  function onConnectionOpen() {
+
+    // Access to private members.
+    var my = this._private;
+
+    // Subscribe to each channel we are bound to.
+    for (var channelId in my.handlers) {
+      if (my.handlers.hasOwnProperty(channelId)) {
+
+        var uuid = TheNewTricks.UUID.parse(channelId);
+        subscribeToChannel.bind(this)(uuid);
+      }
+    }
+  }
 
   return Courage;
 

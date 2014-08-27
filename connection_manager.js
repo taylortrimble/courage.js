@@ -11,7 +11,7 @@ var TheNewTricks = TheNewTricks || {};
 TheNewTricks.Courage = (function(Courage) {
 
   // Class private container.
-  var Private = Courage._private = Courage._private || {};
+  var PrivateCourage = Courage._private = Courage._private || {};
 
   var INITIAL_TIMEOUT_INTERVAL =    100,    // 100 ms.
       CEILING_TIMEOUT_INTERVAL = 300000;    // 5 min.
@@ -35,7 +35,7 @@ TheNewTricks.Courage = (function(Courage) {
   //   - onopen
   //   - onmessage
   //   - onerror
-  Private.ConnectionManager = function ConnectionManager(url) {
+  PrivateCourage.ConnectionManager = function ConnectionManager(url) {
 
     // Public members.
     this.connected = false;
@@ -44,7 +44,7 @@ TheNewTricks.Courage = (function(Courage) {
     this.onerror   = function(){};
 
     // Private members.
-    var my = this._private_vars = {};
+    var my = this._private = {};
 
     my.url = url;
     my.started = false;
@@ -53,7 +53,7 @@ TheNewTricks.Courage = (function(Courage) {
     my.interval = INITIAL_TIMEOUT_INTERVAL;
   };
 
-  Private.ConnectionManager.prototype = {
+  PrivateCourage.ConnectionManager.prototype = {
 
     // `start` starts the ConnectionManager.
     //
@@ -62,8 +62,7 @@ TheNewTricks.Courage = (function(Courage) {
     start: function start() {
 
       // Access to private members.
-      var my = this._private_vars;
-      var helpers = this._private_methods;
+      var my = this._private;
 
       // Return if we've already started.
       if (my.started) {
@@ -72,92 +71,79 @@ TheNewTricks.Courage = (function(Courage) {
 
       my.started = true;
 
-      helpers.connect.bind(this)();
+      connect.bind(this)();
     },
 
     // `send` sends binary data over the WebSocket connection.
     send: function send(data) {
 
       // Access to private members.
-      var my = this._private_vars;
-      var helpers = this._private_methods;
+      var my = this._private;
 
       my.connection.send(data);
     },
-
-    _private_methods: {
-
-      // `connect` attempts to open a new WebSocket.
-      //
-      // The WebSocket is configured with the appropriate callbacks to enable reconnection
-      // and calling the ConnectionManager's callback functions.
-      connect: function connect() {
-
-        // Access to private members.
-        var my = this._private_vars;
-        var helpers = this._private_methods;
-
-        my.connection = new WebSocket(my.url);
-        my.connection.binaryType = 'arraybuffer';
-        my.connection.onopen = helpers.onWebSocketOpen.bind(this);
-        my.connection.onclose = helpers.onWebSocketClose.bind(this);
-        my.connection.onmessage = helpers.onWebSocketMessage.bind(this);
-        my.connection.onerror = helpers.onWebSocketError.bind(this);
-      },
-
-      // Mark the connection as connected and clear the retry timer.
-      onWebSocketOpen: function onWebSocketOpen() {
-
-        // Access to private members.
-        var my = this._private_vars;
-        var helpers = this._private_methods;
-
-        this.connected = true;
-
-        clearTimeout(my.timer);
-        my.interval = INITIAL_TIMEOUT_INTERVAL;
-
-        this.onopen();
-      },
-
-      // Mark the connection as disconnected and start the retry timer
-      // with an exponentially increasing interval with a ceiling.
-      onWebSocketClose: function onWebSocketClose(event) {
-
-        // Access to private members.
-        var my = this._private_vars;
-        var helpers = this._private_methods;
-
-        this.connected = false;
-
-        my.timer = setTimeout(helpers.connect.bind(this), my.interval);
-
-        // Calculate next timeout interval. Exponential backoff with ceiling.
-        my.interval = my.interval * 2;
-        my.interval = Math.min(my.interval, CEILING_TIMEOUT_INTERVAL);
-      },
-
-      // Pass the message on to the callback.
-      onWebSocketMessage: function onWebSocketMessage(event) {
-
-        // Access to private members.
-        var my = this._private_vars;
-        var helpers = this._private_methods;
-
-        this.onmessage(event);
-      },
-
-      // Pass the error on to the callback.
-      onWebSocketError: function onWebSocketError(error) {
-
-        // Access to private members.
-        var my = this._private_vars;
-        var helpers = this._private_methods;
-
-        this.onerror(error);
-      },
-    },
   };
+
+  // `connect` attempts to open a new WebSocket.
+  //
+  // The WebSocket is configured with the appropriate callbacks to enable reconnection
+  // and calling the ConnectionManager's callback functions.
+  function connect() {
+
+    // Access to private members.
+    var my = this._private;
+
+    my.connection = new WebSocket(my.url);
+    my.connection.binaryType = 'arraybuffer';
+    my.connection.onopen = onWebSocketOpen.bind(this);
+    my.connection.onclose = onWebSocketClose.bind(this);
+    my.connection.onmessage = onWebSocketMessage.bind(this);
+    my.connection.onerror = onWebSocketError.bind(this);
+  }
+
+  // Mark the connection as connected and clear the retry timer.
+  function onWebSocketOpen() {
+
+    // Access to private members.
+    var my = this._private;
+
+    this.connected = true;
+
+    clearTimeout(my.timer);
+    my.interval = INITIAL_TIMEOUT_INTERVAL;
+
+    this.onopen();
+  }
+
+  // Mark the connection as disconnected and start the retry timer
+  // with an exponentially increasing interval with a ceiling.
+  function onWebSocketClose(event) {
+
+    // Access to private members.
+    var my = this._private;
+
+    this.connected = false;
+
+    my.timer = setTimeout(connect.bind(this), my.interval);
+
+    // Calculate next timeout interval. Exponential backoff with ceiling.
+    my.interval = my.interval * 2;
+    my.interval = Math.min(my.interval, CEILING_TIMEOUT_INTERVAL);
+  }
+
+  // Pass the message on to the callback.
+  function onWebSocketMessage(event) {
+    this.onmessage(event);
+  }
+
+  // Pass the error on to the callback.
+  function onWebSocketError(error) {
+
+    // Access to private members.
+    var my = this._private;
+
+    this.onerror(error);
+  }
 
   return Courage;
 
