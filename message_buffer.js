@@ -28,26 +28,11 @@ TheNewTricks.Courage = (function(Courage) {
 
   PrivateCourage.MessageBuffer.prototype = {
 
-    // writeString writes a formatted string to the buffer.
-  	//
-  	// A formatted string is a single byte, which specifies the string length,
-  	// followed by the bytes of the string. Strings must be smaller than 255 bytes,
-  	// and may be UTF-8.
-    writeString: function writeString(s) {
+    // writeUint8 writes an 8-bit integer to the buffer.
+    writeUint8: function writeUint8(u) {
 
-      // Access to private members.
-      var my = this._private;
-
-      // Encode the UTF-8 string.
-      var encoder = new TextEncoder('utf-8');
-      var stringData = new Uint8Array(encoder.encode(s));
-
-      // Grow the buffer by enough to hold the header and UTF-8 string data.
-      grow.bind(this)(Uint8Array.BYTES_PER_ELEMENT + stringData.length);
-
-      // Write the string length header, followed by the string data.
-      writeByte.bind(this)(stringData.length);
-      write.bind(this)(stringData);
+      grow.bind(this)(Uint8Array.BYTES_PER_ELEMENT);
+      writeByte.bind(this)(u);
     },
 
     // writeUUID writes a 16 byte UUID to the buffer.
@@ -60,11 +45,26 @@ TheNewTricks.Courage = (function(Courage) {
       write.bind(this)(uuid);
     },
 
-    // writeUint8 writes an 8-bit integer to the buffer.
-    writeUint8: function writeUint8(u) {
+    // writeString writes a formatted string to the buffer.
+  	//
+  	// A formatted string is a single byte, which specifies the string length,
+  	// followed by the bytes of the string. Strings must be smaller than 255 bytes,
+  	// and may be UTF-8.
+    writeString: function writeString(s) {
 
-      grow.bind(this)(Uint8Array.BYTES_PER_ELEMENT);
-      writeByte.bind(this)(u);
+      // Access to private members.
+      var my = this._private;
+
+      // Encode the UTF-8 string.
+      var encoder = new TextEncoder('utf-8');
+      var stringData = encoder.encode(s);
+
+      // Grow the buffer by enough to hold the header and UTF-8 string data.
+      grow.bind(this)(Uint8Array.BYTES_PER_ELEMENT + stringData.length);
+
+      // Write the string length header, followed by the string data.
+      writeByte.bind(this)(stringData.length);
+      write.bind(this)(stringData);
     },
 
     // buffer returns the raw, underlying ArrayBuffer.
@@ -74,7 +74,7 @@ TheNewTricks.Courage = (function(Courage) {
       var my = this._private;
 
       return my.buffer.buffer;
-    }
+    },
   };
 
   // grow grows the underlying Uint8Array by `size` bytes.
