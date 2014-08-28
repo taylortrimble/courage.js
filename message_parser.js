@@ -18,10 +18,18 @@ TheNewTricks.Courage = (function(Courage) {
     // Private members.
     this._private = {
       buffer: buffer,
-      position: 0,
+      cursor: 0,
     };
   };
 
+  // A MessageParser provides a method of parsing a message payload.
+  //
+  // The MessageParser is initialized with ArrayBuffer data, and the
+  // following types can be parsed:
+  //   - the message header
+  //   - uint8
+  //   - UUID
+  //   - Blob
   PrivateCourage.MessageParser.prototype = {
 
     // readHeader parses the protocolId and messageType from
@@ -63,24 +71,28 @@ TheNewTricks.Courage = (function(Courage) {
     },
   };
 
+  // nextUint8View creates a new Uint8Array of size `size` at the cursor, and then
+  // moves the cursor.
   function nextUint8View(size) {
 
     // Access to private members.
     var my = this._private;
 
-    var nextView = new Uint8Array(my.buffer, my.position, size);
-    my.position += size;
+    var nextView = new Uint8Array(my.buffer, my.cursor, size);
+    my.cursor += size;
 
     return nextView;
   }
 
+  // nextDataView creates a new DataView of size `size` at the cursor, and then
+  // moves the cursor.
   function nextDataView(size) {
 
     // Access to private members.
     var my = this._private;
 
-    var nextView = new DataView(my.buffer, my.position, size);
-    my.position += size;
+    var nextView = new DataView(my.buffer, my.cursor, size);
+    my.cursor += size;
 
     return nextView;
   }

@@ -54,7 +54,7 @@ TheNewTricks.Courage = (function(Courage) {
     // Example:
     //     client.bind('28955ba1-fc5d-4553-9d1b-c751d5110c82', function(data) { console.log(data); });
     //
-    // `data` is an ArrayBuffer.
+    // `data` is a Uint8Array.
     bind: function bind(channelId, callback) {
 
       // Access to private members.
@@ -96,11 +96,14 @@ TheNewTricks.Courage = (function(Courage) {
       parsed[DSN_KEYS[i]] = m[i + 1] || '';
     }
 
+    // Replace the providerId with a parsed version.
     parsed.providerId = TheNewTricks.UUID.parse(parsed.providerId);
 
     return parsed;
   }
 
+  // persistentDeviceId returns a UUID unique to this browser.
+  //
   // Each browser is identified by a persistent, unique UUID, even if they belong to the same
   // user. Retrieve the device id from local storage if it exists, or generate a new one.
   function persistentDeviceId() {
@@ -114,6 +117,8 @@ TheNewTricks.Courage = (function(Courage) {
     return deviceId;
   }
 
+  // subscribeToChannel formats and send a subscribtion request for the specified channelId
+  // to teh service.
   function subscribeToChannel(channelId) {
 
       // Access to private members.
@@ -133,12 +138,12 @@ TheNewTricks.Courage = (function(Courage) {
       my.connectionManager.send(request.buffer().buffer);
     }
 
+  // onConnectionOpened, resubscribe to the channels we are bound to.
   function onConnectionOpen() {
 
     // Access to private members.
     var my = this._private;
 
-    // Subscribe to each channel we are bound to.
     for (var channelId in my.handlers) {
       if (my.handlers.hasOwnProperty(channelId)) {
 
@@ -148,6 +153,7 @@ TheNewTricks.Courage = (function(Courage) {
     }
   }
 
+  // onConnectionMessage, deliver streaming events to each of the callbacks bound to a channel id.
   function onConnectionMessage(event) {
 
     // Access to private members.

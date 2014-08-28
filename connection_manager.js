@@ -54,7 +54,7 @@ TheNewTricks.Courage = (function(Courage) {
 
   PrivateCourage.ConnectionManager.prototype = {
 
-    // `send` sends binary data over the WebSocket connection.
+    // send sends binary data over the WebSocket connection.
     send: function send(data) {
 
       // Access to private members.
@@ -64,7 +64,7 @@ TheNewTricks.Courage = (function(Courage) {
     },
   };
 
-  // `connect` attempts to open a new WebSocket.
+  // connect attempts to open a new WebSocket.
   //
   // The WebSocket is configured with the appropriate callbacks to enable reconnection
   // and calling the ConnectionManager's callback functions.
@@ -81,7 +81,7 @@ TheNewTricks.Courage = (function(Courage) {
     my.connection.onerror = onWebSocketError.bind(this);
   }
 
-  // Mark the connection as connected and clear the retry timer.
+  // onWebSocketOpen, mark the connection as connected and clear the retry timer.
   function onWebSocketOpen() {
 
     // Access to private members.
@@ -95,7 +95,7 @@ TheNewTricks.Courage = (function(Courage) {
     this.onopen();
   }
 
-  // Mark the connection as disconnected and start the retry timer
+  // onWebSocketclose, mark the connection as disconnected and start the retry timer
   // with an exponentially increasing interval with a ceiling.
   function onWebSocketClose(event) {
 
@@ -111,12 +111,12 @@ TheNewTricks.Courage = (function(Courage) {
     my.interval = Math.min(my.interval, CEILING_TIMEOUT_INTERVAL);
   }
 
-  // Pass the message on to the callback.
+  // onWebSocketMessage, pass the message on to the callback.
   function onWebSocketMessage(event) {
     this.onmessage(event);
   }
 
-  // Pass the error on to the callback.
+  // onWebSocketError, pass the error on to the callback.
   function onWebSocketError(error) {
     this.onerror(error);
   }
