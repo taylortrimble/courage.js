@@ -46,11 +46,11 @@ The above code decodes the binary data into a UTF-8 string, and parses a JSON ob
 
 The Courage client is initialized with a DSN, a string that encodes the configuration information for the client. It contains:
 
-- Authorization public key (username)
-- Authorization private key (password)
-- Service hostname (host)
-- Service port (port)
-- The provider id of the provider we are interested in (providerId)
+- Authorization public key (`username`)
+- Authorization private key (`password`)
+- Service hostname (`host`)
+- Service port (`port`)
+- The provider id of the provider we are interested in (`providerId`)
 
 The DSN is structured as follows:
 
@@ -60,4 +60,4 @@ Here is an example:
 
     sessionid:sessionkey@rt.thenewtricks.com:9090/928308cd-eff8-4ef6-a154-f8268ec663d5
 
-Currently, only one provider ID per connection is supported.
+Currently, only one provider id per connection is supported.
