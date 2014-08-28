@@ -147,8 +147,35 @@ TheNewTricks.Courage = (function(Courage) {
 
   function onConnectionMessage(event) {
 
-    uint8View = new Uint8Array(event.data);
-    console.log(uint8View);
+    // Access to private members.
+    var my = this._private;
+
+    var parser = new PrivateCourage.MessageParser(event.data);
+
+    // Discard messages with unrecognized headers.
+    var header = parser.readHeader();
+    if (header.protocol != 1 || header.messageType != 3) {
+      console.log('bad message header');
+      return;
+    }
+
+    // Parse the channel id and get the registered callback.
+    var channelId = parser.readUUID();
+    var callback = my.handlers[TheNewTricks.UUID.unparse(channelId)];
+
+    // For each event, deliver the event data.
+    var numEvents = parser.readUint8();
+    for (var i = 0; i < numEvents; i++) {
+
+      var data = parser.readBlob();
+
+      // IE10: Manually create a new ArrayBuffer with the data.
+      //       ArrayBuffer.slice is unavailable in IE10.
+      var newBuffer = new Uint8Array(data.length);
+      newBuffer.set(data);
+
+      callback(newBuffer.buffer);
+    }
   }
 
   return Courage;
