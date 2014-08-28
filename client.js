@@ -13,9 +13,12 @@ TheNewTricks.Courage = (function(Courage) {
   // Class private container.
   var PrivateCourage = Courage._private = Courage._private || {};
 
-  var DSN_KEYS      = 'username password host port providerId'.split(' '),
-      DSN_PATTERN   = /^([0-9a-z-]+):([0-9a-z-]+)@([0-9a-z-\.]+):([0-9]+)\/([0-9a-z-]+)$/i,
-      DEVICE_ID_KEY = 'com.thenewtricks.courage.deviceId';
+  var DSN_KEYS               = 'username password host port providerId'.split(' '),
+      DSN_PATTERN            = /^([0-9a-z-]+):([0-9a-z-]+)@([0-9a-z-\.]+):([0-9]+)\/([0-9a-z-]+)$/i,
+      DEVICE_ID_KEY          = 'com.thenewtricks.courage.deviceId',
+      SUBSCRIBE_PROTOCOL_ID  = 1,
+      REQUEST_MESSAGE_TYPE   = 0,
+      STREAMING_MESSAGE_TYPE = 3;
 
   // The Courage Client is used to subscribe to streaming events from the Courage service.
   //
@@ -117,7 +120,7 @@ TheNewTricks.Courage = (function(Courage) {
       var my = this._private;
 
       // Form the subscribe request.
-      var request = new PrivateCourage.MessageBuffer(1, 0);
+      var request = new PrivateCourage.MessageBuffer(SUBSCRIBE_PROTOCOL_ID, REQUEST_MESSAGE_TYPE);
 
       request.writeString(my.dsn.username);
       request.writeString(my.dsn.password);
@@ -154,7 +157,7 @@ TheNewTricks.Courage = (function(Courage) {
 
     // Discard messages with unrecognized headers.
     var header = parser.readHeader();
-    if (header.protocol != 1 || header.messageType != 3) {
+    if (header.protocol != SUBSCRIBE_PROTOCOL_ID || header.messageType != STREAMING_MESSAGE_TYPE) {
       return;
     }
 
