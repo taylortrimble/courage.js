@@ -60,13 +60,7 @@ TheNewTricks.Courage = (function(Courage) {
       // Access to private members.
       var my = this._private;
 
-      my.handlers[channelId.toLowerCase()] = callback;
-
-      // If we haven't started the connection manager, start it now. The new channel will be
-      // subscribed to automatically.
-      //
-      // Otherwise, if we're connected, subscribe right away. If we're started and not connected,
-      // then no-op; all channels get subscribed to automatically when the connection is reopened.
+      // If the connection manager isn't started, start it now.
       if (!my.connectionManager) {
 
         var url = 'ws://' + my.dsn.host + ':' + my.dsn.port + '/';
@@ -75,11 +69,17 @@ TheNewTricks.Courage = (function(Courage) {
         my.connectionManager.onopen = onConnectionOpen.bind(this);
         my.connectionManager.onmessage = onConnectionMessage.bind(this);
 
-      } else if (my.connectionManager.connected) {
+      }
+
+      // Register the callback for events on the bound channel.
+      my.handlers[channelId.toLowerCase()] = callback;
+
+      // If the connection manager is started and connected, subscribe right away. Otherwise no-op;
+      // all channels will be subscribed to automatically when the connection is reopened.
+      if (my.connectionManager.connected) {
 
         var uuid = TheNewTricks.UUID.parse(channelId);
         subscribeToChannel.bind(this)(uuid);
-
       }
     },
   };
