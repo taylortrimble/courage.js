@@ -127,7 +127,7 @@ TheNewTricks.Courage = (function(Courage) {
       request.writeUint8(0);
 
       // Send the subscribe request.
-      my.connectionManager.send(request.buffer());
+      my.connectionManager.send(request.buffer().buffer);
     }
 
   function onConnectionOpen() {
@@ -155,7 +155,6 @@ TheNewTricks.Courage = (function(Courage) {
     // Discard messages with unrecognized headers.
     var header = parser.readHeader();
     if (header.protocol != 1 || header.messageType != 3) {
-      console.log('bad message header');
       return;
     }
 
@@ -168,13 +167,7 @@ TheNewTricks.Courage = (function(Courage) {
     for (var i = 0; i < numEvents; i++) {
 
       var data = parser.readBlob();
-
-      // IE10: Manually create a new ArrayBuffer with the data.
-      //       ArrayBuffer.slice is unavailable in IE10.
-      var newBuffer = new Uint8Array(data.length);
-      newBuffer.set(data);
-
-      callback(newBuffer.buffer);
+      callback(data);
     }
   }
 

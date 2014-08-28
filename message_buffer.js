@@ -73,7 +73,7 @@ TheNewTricks.Courage = (function(Courage) {
       // Access to private members.
       var my = this._private;
 
-      return my.buffer.buffer;
+      return my.buffer;
     },
   };
 
