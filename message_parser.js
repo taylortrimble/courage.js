@@ -51,19 +51,19 @@ TheNewTricks.Courage = (function(Courage) {
     },
 
     // readUUID reads a 16 byte UUID from the buffer.
-  	//
-  	// UUIDs are 16 bytes in big endian format, and are based on
-  	// RFC 4122 and DCE 1.1: Authentication and Security Services.
+    //
+    // UUIDs are 16 bytes in big endian format, and are based on
+    // RFC 4122 and DCE 1.1: Authentication and Security Services.
     readUUID: function readUUID() {
 
       return nextUint8View.bind(this)(16);
     },
 
     // readBlob parses a formatted data blob from the buffer.
-  	//
-  	// A formatted data blob is two bytes in big endian format, which specifies the
-  	// blob length, followed by the bytes of data. Blob data must be 65,535 bytes
-  	// or fewer.
+    //
+    // A formatted data blob is two bytes in big endian format, which specifies the
+    // blob length, followed by the bytes of data. Blob data must be 65,535 bytes
+    // or fewer.
     readBlob: function readBlob() {
 
       var size = nextDataView.bind(this)(2).getUint16(0);

@@ -45,9 +45,9 @@ TheNewTricks.Courage = (function(Courage) {
     },
 
     // writeUUID appends a 16 byte UUID to the buffer.
-  	//
-  	// UUIDs are 16 bytes in big endian format, and are based on
-  	// RFC 4122 and DCE 1.1: Authentication and Security Services.
+    //
+    // UUIDs are 16 bytes in big endian format, and are based on
+    // RFC 4122 and DCE 1.1: Authentication and Security Services.
     writeUUID: function writeUUID(uuid) {
 
       grow.bind(this)(uuid.length);
@@ -55,10 +55,10 @@ TheNewTricks.Courage = (function(Courage) {
     },
 
     // writeString appends a formatted string to the buffer.
-  	//
-  	// A formatted string is a single byte, which specifies the string length,
-  	// followed by the bytes of the string. Strings must be smaller than 255 bytes,
-  	// and may be UTF-8.
+    //
+    // A formatted string is a single byte, which specifies the string length,
+    // followed by the bytes of the string. Strings must be smaller than 255 bytes,
+    // and may be UTF-8.
     writeString: function writeString(s) {
 
       // Access to private members.
