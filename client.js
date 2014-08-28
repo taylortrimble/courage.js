@@ -126,8 +126,6 @@ TheNewTricks.Courage = (function(Courage) {
       request.writeUUID(my.deviceId);
       request.writeUint8(0);
 
-      console.log(request._private.buffer);
-
       // Send the subscribe request.
       my.connectionManager.send(request.buffer());
     }

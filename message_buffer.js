@@ -1,5 +1,5 @@
 //
-// format.js
+// message_buffer.js
 // courage.js
 //
 // Copyright (c) 2014 The New Tricks, LLC.
