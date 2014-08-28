@@ -87,6 +87,7 @@ TheNewTricks.Courage = (function(Courage) {
     var parsed = {};
     var m = DSN_PATTERN.exec(dsn);
     // TODO: fail if pattern fails to match.
+    // TODO: Validate auth strings length and valid parameters.
 
     for (var i = 0; i < DSN_KEYS.length; i++) {
       parsed[DSN_KEYS[i]] = m[i + 1] || '';
@@ -116,14 +117,19 @@ TheNewTricks.Courage = (function(Courage) {
       var my = this._private;
 
       // Form the subscribe request.
-      var request = PrivateCourage.formatSubscribeRequest(my.dsn.username,
-                                                          my.dsn.password,
-                                                          my.dsn.providerId,
-                                                          channelId,
-                                                          my.deviceId,
-                                                          0);
+      var request = new PrivateCourage.MessageBuffer(1, 0);
 
-      my.connectionManager.send(request.buffer);
+      request.writeString(my.dsn.username);
+      request.writeString(my.dsn.password);
+      request.writeUUID(my.dsn.providerId);
+      request.writeUUID(channelId);
+      request.writeUUID(my.deviceId);
+      request.writeUint8(0);
+
+      console.log(request._private.buffer);
+
+      // Send the subscribe request.
+      my.connectionManager.send(request.buffer());
     }
 
   function onConnectionOpen() {

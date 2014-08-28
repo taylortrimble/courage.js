@@ -13,91 +13,107 @@ TheNewTricks.Courage = (function(Courage) {
   // Class private container.
   var PrivateCourage = Courage._private = Courage._private || {};
 
-  // formatSubscribeRequest returns a Uint8Array filled with a Subscribe Request payload, with header.
+  PrivateCourage.MessageBuffer = function MessageBuffer(protocolId, messageType) {
+
+    // Create a new buffer with the message header.
+    var uint8View = new Uint8Array(1);
+    uint8View[0] = protocolId << 4 + messageType;
+
+    // Private members.
+    this._private = {
+      buffer: uint8View,
+      position: 1,
+    };
+  };
+
+  PrivateCourage.MessageBuffer.prototype = {
+
+    // writeString writes a formatted string to the buffer.
+  	//
+  	// A formatted string is a single byte, which specifies the string length,
+  	// followed by the bytes of the string. Strings must be smaller than 255 bytes,
+  	// and may be UTF-8.
+    writeString: function writeString(s) {
+
+      // Access to private members.
+      var my = this._private;
+
+      // Encode the UTF-8 string.
+      var encoder = new TextEncoder('utf-8');
+      var stringData = new Uint8Array(encoder.encode(s));
+
+      // Grow the buffer by enough to hold the header and UTF-8 string data.
+      grow.bind(this)(Uint8Array.BYTES_PER_ELEMENT + stringData.length);
+
+      // Write the string length header, followed by the string data.
+      writeByte.bind(this)(stringData.length);
+      write.bind(this)(stringData);
+    },
+
+    // writeUUID writes a 16 byte UUID to the buffer.
+  	//
+  	// UUIDs are 16 bytes in big endian format, and are based on
+  	// RFC 4122 and DCE 1.1: Authentication and Security Services.
+    writeUUID: function writeUUID(uuid) {
+
+      grow.bind(this)(uuid.length);
+      write.bind(this)(uuid);
+    },
+
+    // writeUint8 writes an 8-bit integer to the buffer.
+    writeUint8: function writeUint8(u) {
+
+      grow.bind(this)(Uint8Array.BYTES_PER_ELEMENT);
+      writeByte.bind(this)(u);
+    },
+
+    // buffer returns the raw, underlying ArrayBuffer.
+    buffer: function buffer() {
+
+      // Access to private members.
+      var my = this._private;
+
+      return my.buffer.buffer;
+    }
+  };
+
+  // grow grows the underlying Uint8Array by `size` bytes.
   //
-  // Field order is:
-  //   - username    (string)
-  //   - password    (string)
-  //   - providerId  (uuid)
-  //   - channelId   (uuid)
-  //   - deviceId    (uuid)
-  //   - options     (uint8)
-  PrivateCourage.formatSubscribeRequest = function formatSubscribeRequest(username, password, providerId, channelId, deviceId, options) {
+  // A call to grow must be followed by a sequence of write and writeByte calls
+  // that fill the entire size grown. Do not grow the buffer more than the amount
+  // needed, as this will result in a padded buffer.
+  function grow(size) {
 
-    var usernameField = PrivateCourage.formatString(username);
-    var passwordField = PrivateCourage.formatString(password);
-    var providerIdField = PrivateCourage.formatUUID(providerId);
-    var channelIdField = PrivateCourage.formatUUID(channelId);
-    var deviceIdField = PrivateCourage.formatUUID(deviceId);
+    // Access to private members.
+    var my = this._private;
 
-    // Initialize the buffer, its views, and a cursor.
-    var headerLength = Uint8Array.BYTES_PER_ELEMENT;
-    var optionsLength = Uint8Array.BYTES_PER_ELEMENT;
-    var length = headerLength +
-                 usernameField.length + passwordField.length +
-                 providerIdField.length + channelIdField.length + deviceIdField.length +
-                 optionsLength;
-    var data = new ArrayBuffer(length);
-    var dataView = new DataView(data);
-    var uint8View = new Uint8Array(data);
-    var position = 0;
+    var newBuffer = new Uint8Array(my.buffer.length + size);
+    newBuffer.set(my.buffer);
 
-    // Write the subscribe request header.
-    // TODO: use constants.
-    dataView.setUint8(position, 0x10); position += headerLength;
+    my.buffer = newBuffer;
+  }
 
-    // Write the username and password.
-    uint8View.set(usernameField, position); position += usernameField.length;
-    uint8View.set(passwordField, position); position += passwordField.length;
+  // write appends a Uint8Array after the cursor.
+  // There must be space in the buffer, given by grow.
+  function write(data) {
 
-    // Write the provider, channel, and device IDs.
-    uint8View.set(providerIdField, position); position += providerIdField.length;
-    uint8View.set(channelIdField, position); position += channelIdField.length;
-    uint8View.set(deviceIdField, position); position += deviceIdField.length;
+    // Access to private members.
+    var my = this._private;
 
-    // Write options.
-    dataView.setUint8(position, options); position += optionsLength;
+    my.buffer.set(data, my.position);
+    my.position += data.length;
+  }
 
-    return uint8View;
-  };
+  // writeByte appends a byte after the cursor.
+  // There must be space in the buffer, given by grow.
+  function writeByte(byte) {
 
-  // formatString returns a Uint8Array filled with a formatted string payload, without header.
-	//
-	// A formatted string is a single byte, which specifies the string length,
-	// followed by the bytes of the string. Strings must be smaller than 255 bytes,
-	// and may be unicode.
-  PrivateCourage.formatString = function formString(s) {
+    // Access to private members.
+    var my = this._private;
 
-    // TODO: Validate string byte length.
-
-    // Encode the UFT-8 string.
-    var encoder = new TextEncoder('utf-8');
-    var stringData = encoder.encode(s);
-
-    // Initialize the buffer, its views, and a cursor.
-    var headerLength = Uint8Array.BYTES_PER_ELEMENT;
-    var length = headerLength + stringData.byteLength;
-    var data = new ArrayBuffer(length);
-    var dataView = new DataView(data)
-    var uint8View = new Uint8Array(data);
-    var position = 0;
-
-    // Write the string length.
-    dataView.setUint8(position, stringData.byteLength); position += headerLength;
-
-    // Write the string data.
-    uint8View.set(stringData, position); position += stringData.byteLength;
-
-    return uint8View;
-  };
-
-  // formatUUID returns a Uint8Array filled with a formatted UUID, without header.
-	//
-	// UUIDs are 16 bytes in big endian format, and are based on
-	// RFC 4122 and DCE 1.1: Authentication and Security Services.
-  PrivateCourage.formatUUID = function formUUID(uuid) {
-    return uuid;
-  };
+    my.buffer[my.position] = byte;
+    my.position += Uint8Array.BYTES_PER_ELEMENT;
+  }
 
   return Courage;
 
