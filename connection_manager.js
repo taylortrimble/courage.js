@@ -29,16 +29,16 @@ TheNewTricks.Courage = (function(Courage) {
   //     connectionManager.send(data);
   //
   // The following callbacks exist:
-  //   - onopen
-  //   - onmessage
-  //   - onerror
+  //   - onOpen
+  //   - onMessage
+  //   - onError
   PrivateCourage.ConnectionManager = function ConnectionManager(url) {
 
     // Public members.
     this.connected = false;
-    this.onopen    = function(){};
-    this.onmessage = function(){};
-    this.onerror   = function(){};
+    this.onOpen    = function(){};
+    this.onMessage = function(){};
+    this.onError   = function(){};
 
     // Private members.
     this._private = {
@@ -92,7 +92,7 @@ TheNewTricks.Courage = (function(Courage) {
     clearTimeout(my.timer);
     my.interval = INITIAL_TIMEOUT_INTERVAL;
 
-    this.onopen();
+    this.onOpen();
   }
 
   // onWebSocketclose, mark the connection as disconnected and start the retry timer
@@ -113,12 +113,12 @@ TheNewTricks.Courage = (function(Courage) {
 
   // onWebSocketMessage, pass the message on to the callback.
   function onWebSocketMessage(event) {
-    this.onmessage(event);
+    this.onMessage(event);
   }
 
   // onWebSocketError, pass the error on to the callback.
   function onWebSocketError(error) {
-    this.onerror(error);
+    this.onError(error);
   }
 
   return Courage;

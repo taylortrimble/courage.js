@@ -66,8 +66,8 @@ TheNewTricks.Courage = (function(Courage) {
         var url = 'ws://' + my.dsn.host + ':' + my.dsn.port + '/';
         my.connectionManager = new PrivateCourage.ConnectionManager(url);
 
-        my.connectionManager.onopen = onConnectionOpen.bind(this);
-        my.connectionManager.onmessage = onConnectionMessage.bind(this);
+        my.connectionManager.onOpen = onConnectionOpen.bind(this);
+        my.connectionManager.onMessage = onConnectionMessage.bind(this);
 
       }
 
