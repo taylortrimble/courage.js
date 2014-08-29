@@ -163,7 +163,7 @@ TheNewTricks.Courage = (function(Courage) {
 
     // Discard messages with unrecognized headers.
     var header = parser.readHeader();
-    if (header.protocol != SUBSCRIBE_PROTOCOL_ID || header.messageType != STREAMING_MESSAGE_TYPE) {
+    if (header.protocol !== SUBSCRIBE_PROTOCOL_ID || header.messageType !== STREAMING_MESSAGE_TYPE) {
       return;
     }
 
