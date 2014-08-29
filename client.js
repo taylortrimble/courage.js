@@ -174,7 +174,6 @@ TheNewTricks.Courage = (function(Courage) {
     // For each event, deliver the event data.
     var numEvents = parser.readUint8();
     for (var i = 0; i < numEvents; i++) {
-
       var data = parser.readBlob();
       callback(data);
     }
