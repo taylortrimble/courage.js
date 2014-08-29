@@ -76,7 +76,7 @@ TheNewTricks.Courage = (function(Courage) {
 
       // If the connection manager is started and connected, subscribe right away. Otherwise no-op;
       // all channels will be subscribed to automatically when the connection is reopened.
-      if (my.connectionManager.connected) {
+      if (my.connectionManager.readyState() === WebSocket.OPEN) {
 
         var uuid = TheNewTricks.UUID.parse(channelId);
         subscribeToChannel.bind(this)(uuid);

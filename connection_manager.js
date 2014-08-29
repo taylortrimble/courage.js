@@ -35,7 +35,6 @@ TheNewTricks.Courage = (function(Courage) {
   PrivateCourage.ConnectionManager = function ConnectionManager(url) {
 
     // Public members.
-    this.connected = false;
     this.onOpen    = function(){};
     this.onMessage = function(){};
     this.onError   = function(){};
@@ -53,6 +52,16 @@ TheNewTricks.Courage = (function(Courage) {
   };
 
   PrivateCourage.ConnectionManager.prototype = {
+
+    // readyState returns the readyState of the underlying WebSocket. If there is
+    // no underlying WebSocket, it returns CONNECTING.
+    readyState: function readyState() {
+
+      // Access to private members.
+      var my = this._private;
+
+      return my.connection.readyState;
+    },
 
     // send sends binary data over the WebSocket connection.
     send: function send(data) {
@@ -87,8 +96,6 @@ TheNewTricks.Courage = (function(Courage) {
     // Access to private members.
     var my = this._private;
 
-    this.connected = true;
-
     clearTimeout(my.timer);
     my.interval = INITIAL_TIMEOUT_INTERVAL;
 
@@ -101,8 +108,6 @@ TheNewTricks.Courage = (function(Courage) {
 
     // Access to private members.
     var my = this._private;
-
-    this.connected = false;
 
     my.timer = setTimeout(connect.bind(this), my.interval);
 
