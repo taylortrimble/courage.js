@@ -10,6 +10,9 @@ var TheNewTricks = TheNewTricks || {};
 
 TheNewTricks.UUID = (function(UUID) {
 
+  var HYPEN_INDEXES = [4, 6, 8, 10];  // Values signify the logical UUID byte
+                                      // after which a hyphen is appended.
+
   // Parse parses a UUID of the format:
   //    9e561659-a4ce-43ea-803c-a0181224ce34
   //
@@ -64,20 +67,25 @@ TheNewTricks.UUID = (function(UUID) {
   //    9e561659-a4ce-43ea-803c-a0181224ce34
   var unparse = function unparse(uuid){
 
-    var pb = function paddedByte(b) {
-      var s = b.toString(16);
+    var unparsed = '';
+
+    for (var i = 0; i < uuid.length; i++) {
+
+      // Convert the byte to a full 2-character base 16 representation.
+      var s = uuid[i].toString(16);
       if (s.length < 2) {
         s = '0' + s;
       }
 
-      return s;
-    };
+      // If necessary, append a hyphen.
+      if (HYPEN_INDEXES.indexOf(i) !== -1) {
+        unparsed += "-";
+      }
 
-    return pb(uuid[0]) + pb(uuid[1]) + pb(uuid[2]) + pb(uuid[3]) + "-" +
-           pb(uuid[4]) + pb(uuid[5]) + "-" +
-           pb(uuid[6]) + pb(uuid[7]) + "-" +
-           pb(uuid[8]) + pb(uuid[9]) + "-" +
-           pb(uuid[10]) + pb(uuid[11]) + pb(uuid[12]) + pb(uuid[13]) + pb(uuid[14]) + pb(uuid[15]);
+      unparsed += s;
+    }
+
+    return unparsed;
   };
 
   return {
