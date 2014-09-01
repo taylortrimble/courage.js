@@ -10,8 +10,8 @@ var TheNewTricks = TheNewTricks || {};
 
 TheNewTricks.UUID = (function(UUID) {
 
-  var HYPEN_INDEXES = [4, 6, 8, 10];  // Values signify the logical UUID byte
-                                      // after which a hyphen is appended.
+  var HYPEN_INDEXES = [3, 5, 7, 9]; // Values signify the logical UUID byte index
+                                    // after which a hyphen is appended.
 
   // Parse parses a UUID of the format:
   //    9e561659-a4ce-43ea-803c-a0181224ce34
@@ -77,12 +77,13 @@ TheNewTricks.UUID = (function(UUID) {
         s = '0' + s;
       }
 
+      // Add the character representation to the string.
+      unparsed += s;
+
       // If necessary, append a hyphen.
       if (HYPEN_INDEXES.indexOf(i) !== -1) {
         unparsed += "-";
       }
-
-      unparsed += s;
     }
 
     return unparsed;
