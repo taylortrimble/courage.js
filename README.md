@@ -61,3 +61,20 @@ Here is an example:
     sessionid:sessionkey@rt.thenewtricks.com:9090/928308cd-eff8-4ef6-a154-f8268ec663d5
 
 Currently, only one provider id per connection is supported.
+
+Notes
+-----
+
+#### Typed Arrays
+
+[Typed Arrays](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays) are used extensively throughout this project. They're not for performance though: almost every API in this project uses typed arrays:
+ - `WebSocket`
+ - `crypto.getRandomBytes`
+ - `TextEncoder`
+ - `TextDecoder`
+
+ Converting these typed arrays to plain JS arrays and back all the time is silly and inefficient, so typed arrays abound!
+
+#### `Uint8Array`s
+
+Related to the above, the default view on an `ArrayBuffer` is a `Uint8Array`. Not only is this the specific subtype used by `TextEncoder`, it also just makes sense for a network-oriented module like ours since network data is all octets.
