@@ -55,10 +55,12 @@ TheNewTricks.Courage = (function(Courage) {
     //     client.bind('28955ba1-fc5d-4553-9d1b-c751d5110c82', function(data) { console.log(data); });
     //
     // `data` is a Uint8Array.
-    bind: function bind(channelId, callback) {
+    bind: function bind(channelId, callback, options) {
 
       // Access to private members.
       var my = this._private;
+
+      var options = options || {};
 
       // If the connection manager isn't started, start it now.
       if (!my.connectionManager) {
@@ -71,15 +73,18 @@ TheNewTricks.Courage = (function(Courage) {
 
       }
 
-      // Register the callback for events on the bound channel.
-      my.handlers[channelId.toLowerCase()] = callback;
+      // Register the callback and options for events on the bound channel.
+      my.handlers[channelId.toLowerCase()] = {
+        replay: options.replay,
+        callback: callback,
+      };
 
       // If the connection manager is started and connected, subscribe right away. Otherwise no-op;
       // all channels will be subscribed to automatically when the connection is reopened.
       if (my.connectionManager.readyState() === WebSocket.OPEN) {
 
         var uuid = TheNewTricks.UUID.parse(channelId);
-        subscribeToChannel.bind(this)(uuid);
+        subscribeToChannel.bind(this)(uuid, options.replay);
       }
     },
   };
@@ -119,7 +124,7 @@ TheNewTricks.Courage = (function(Courage) {
 
   // subscribeToChannel formats and send a subscribtion request for the specified channelId
   // to teh service.
-  function subscribeToChannel(channelId) {
+  function subscribeToChannel(channelId, replay) {
 
       // Access to private members.
       var my = this._private;
@@ -132,7 +137,7 @@ TheNewTricks.Courage = (function(Courage) {
       request.writeUUID(my.dsn.providerId);
       request.writeUUID(channelId);
       request.writeUUID(my.deviceId);
-      request.writeUint8(0);
+      request.writeUint8(replay ? 1 : 0);
 
       // Send the subscribe request.
       my.connectionManager.send(request.buffer().buffer);
@@ -148,7 +153,7 @@ TheNewTricks.Courage = (function(Courage) {
       if (my.handlers.hasOwnProperty(channelId)) {
 
         var uuid = TheNewTricks.UUID.parse(channelId);
-        subscribeToChannel.bind(this)(uuid);
+        subscribeToChannel.bind(this)(uuid, my.handlers[channelId].replay);
       }
     }
   }
@@ -169,7 +174,7 @@ TheNewTricks.Courage = (function(Courage) {
 
     // Parse the channel id and get the registered callback.
     var channelId = parser.readUUID();
-    var callback = my.handlers[TheNewTricks.UUID.unparse(channelId)];
+    var callback = my.handlers[TheNewTricks.UUID.unparse(channelId)].callback;
 
     // For each event, deliver the event data.
     var numEvents = parser.readUint8();
