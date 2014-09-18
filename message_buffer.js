@@ -67,9 +67,6 @@ TheNewTricks.Courage = (function(Courage) {
   // and may be UTF-8.
   function writeString(s) {
 
-    // Access to private members.
-    var my = this._private;
-
     // Encode the UTF-8 string.
     var encoder = new TextEncoder('utf-8');
     var stringData = encoder.encode(s);
