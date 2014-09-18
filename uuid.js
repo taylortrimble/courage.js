@@ -13,11 +13,17 @@ TheNewTricks.UUID = (function(UUID) {
   var HYPEN_INDEXES = [3, 5, 7, 9]; // Values signify the logical UUID byte index
                                     // after which a hyphen is appended.
 
+  return {
+    parse: parse,
+    generateV4: generateV4,
+    unparse: unparse,
+  };
+
   // Parse parses a UUID of the format:
   //    9e561659-a4ce-43ea-803c-a0181224ce34
   //
   // into a Uint8Array. It is case-insensitive.
-  var parse = function parse(s) {
+  function parse(s) {
 
     // Validate s.
     var uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
@@ -44,7 +50,7 @@ TheNewTricks.UUID = (function(UUID) {
   // If not, Math.random is used.
   //
   // A Uint8Array is returned.
-  var generateV4 = function generateV4() {
+  function generateV4() {
 
     var uuid = new Uint8Array(16);
 
@@ -65,7 +71,7 @@ TheNewTricks.UUID = (function(UUID) {
 
   // Unparse turns a UUID represented by a 16-byte Uint8Array into a string formatted as:
   //    9e561659-a4ce-43ea-803c-a0181224ce34
-  var unparse = function unparse(uuid){
+  function unparse(uuid){
 
     var unparsed = '';
 
@@ -88,11 +94,4 @@ TheNewTricks.UUID = (function(UUID) {
 
     return unparsed;
   };
-
-  return {
-    parse: parse,
-    generateV4: generateV4,
-    unparse: unparse,
-  };
-
 })(TheNewTricks.UUID || {});

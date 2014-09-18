@@ -10,9 +10,6 @@ var TheNewTricks = TheNewTricks || {};
 
 TheNewTricks.Courage = (function(Courage) {
 
-  // Class private container.
-  var PrivateCourage = Courage._private = Courage._private || {};
-
   var DSN_KEYS               = 'username password host port providerId'.split(' '),
       DSN_PATTERN            = /^([0-9a-z-]+):([0-9a-z-]+)@([0-9a-z-\.]+):([0-9]+)\/([0-9a-z-]+)$/i,
       DEVICE_ID_KEY          = 'com.thenewtricks.courage.deviceId',
@@ -35,58 +32,21 @@ TheNewTricks.Courage = (function(Courage) {
   //     client.bind('28955ba1-fc5d-4553-9d1b-c751d5110c82', function(data) { console.log(data); });
   Courage.Client = function Client(dsn) {
 
-    // Parse the DSN, get the persistent device id, and initialize a data structure to map channel ids
-    // to callbacks. Store as private members.
-    this._private = {
-      dsn: parseDSN(dsn),
-      deviceId: persistentDeviceId(),
-      handlers: {},
-      connectionManager: null,
-    };
+    // Parse the DSN, get the persistent device id, and initialize a data structure
+    // to map channel ids to callbacks.
+    this._dsn = parseDSN(dsn);
+    this._deviceId = persistentDeviceId();
+    this._handlers = {};
+    this._connectionManager = null;
   };
   
   Courage.Client.prototype = {
 
-    // The app can use the `bind` method of the Client to subscribe to events from a channel defined
-    // by a channelId. All events that match that channelId will be fed to the callback function
-    // registered with `bind`.
-    //
-    // Example:
-    //     client.bind('28955ba1-fc5d-4553-9d1b-c751d5110c82', function(data) { console.log(data); });
-    //
-    // `data` is a Uint8Array.
-    bind: function bind(channelId, callback, options) {
+    bind: bind,
 
-      // Access to private members.
-      var my = this._private;
-
-      var options = options || {};
-
-      // If the connection manager isn't started, start it now.
-      if (!my.connectionManager) {
-
-        var url = 'ws://' + my.dsn.host + ':' + my.dsn.port + '/';
-        my.connectionManager = new PrivateCourage.ConnectionManager(url);
-
-        my.connectionManager.onOpen = onConnectionOpen.bind(this);
-        my.connectionManager.onMessage = onConnectionMessage.bind(this);
-
-      }
-
-      // Register the callback and options for events on the bound channel.
-      my.handlers[channelId.toLowerCase()] = {
-        replay: options.replay,
-        callback: callback,
-      };
-
-      // If the connection manager is started and connected, subscribe right away. Otherwise no-op;
-      // all channels will be subscribed to automatically when the connection is reopened.
-      if (my.connectionManager.readyState() === WebSocket.OPEN) {
-
-        var uuid = TheNewTricks.UUID.parse(channelId);
-        subscribeToChannel.bind(this)(uuid, options.replay);
-      }
-    },
+    _subscribeToChannel: subscribeToChannel,
+    _onConnectionOpen: onConnectionOpen,
+    _onConnectionMessage: onConnectionMessage,
   };
 
   // parseDSN converts a DSN string to its component parts.
@@ -122,38 +82,71 @@ TheNewTricks.Courage = (function(Courage) {
     return deviceId;
   }
 
+  // The app can use the `bind` method of the Client to subscribe to events from a channel defined
+  // by a channelId. All events that match that channelId will be fed to the callback function
+  // registered with `bind`.
+  //
+  // Example:
+  //     client.bind('28955ba1-fc5d-4553-9d1b-c751d5110c82', function(data) { console.log(data); });
+  //
+  // `data` is a Uint8Array.
+  function bind(channelId, callback, options) {
+
+    var options = options || {};
+
+    // If the connection manager isn't started, start it now.
+    if (!this._connectionManager) {
+
+      var url = 'ws://' + this._dsn.host + ':' + this._dsn.port + '/';
+      this._connectionManager = new Courage._ConnectionManager(url);
+
+      this._connectionManager.onOpen = this._onConnectionOpen.bind(this);
+      this._connectionManager.onMessage = this._onConnectionMessage.bind(this);
+
+      this._connectionManager.start();
+    }
+
+    // Register the callback and options for events on the bound channel.
+    this._handlers[channelId.toLowerCase()] = {
+      replay: options.replay,
+      callback: callback,
+    };
+
+    // If the connection manager is started and connected, subscribe right away. Otherwise no-op;
+    // all channels will be subscribed to automatically when the connection is reopened.
+    if (this._connectionManager.readyState() === WebSocket.OPEN) {
+
+      var uuid = TheNewTricks.UUID.parse(channelId);
+      this._subscribeToChannel(uuid, options.replay);
+    }
+  }
+
   // subscribeToChannel formats and send a subscribtion request for the specified channelId
   // to teh service.
   function subscribeToChannel(channelId, replay) {
 
-      // Access to private members.
-      var my = this._private;
-
       // Form the subscribe request.
-      var request = new PrivateCourage.MessageBuffer(SUBSCRIBE_PROTOCOL_ID, REQUEST_MESSAGE_TYPE);
+      var request = new Courage._MessageBuffer(SUBSCRIBE_PROTOCOL_ID, REQUEST_MESSAGE_TYPE);
 
-      request.writeString(my.dsn.username);
-      request.writeString(my.dsn.password);
-      request.writeUUID(my.dsn.providerId);
+      request.writeString(this._dsn.username);
+      request.writeString(this._dsn.password);
+      request.writeUUID(this._dsn.providerId);
       request.writeUUID(channelId);
-      request.writeUUID(my.deviceId);
+      request.writeUUID(this._deviceId);
       request.writeUint8(replay ? 1 : 0);
 
       // Send the subscribe request.
-      my.connectionManager.send(request.buffer().buffer);
+      this._connectionManager.send(request.buffer().buffer);
     }
 
-  // onConnectionOpened, resubscribe to the channels we are bound to.
+  // onConnectionOpen, resubscribe to the channels we are bound to.
   function onConnectionOpen() {
 
-    // Access to private members.
-    var my = this._private;
-
-    for (var channelId in my.handlers) {
-      if (my.handlers.hasOwnProperty(channelId)) {
+    for (var channelId in this._handlers) {
+      if (this._handlers.hasOwnProperty(channelId)) {
 
         var uuid = TheNewTricks.UUID.parse(channelId);
-        subscribeToChannel.bind(this)(uuid, my.handlers[channelId].replay);
+        this._subscribeToChannel(uuid, this._handlers[channelId].replay);
       }
     }
   }
@@ -161,10 +154,7 @@ TheNewTricks.Courage = (function(Courage) {
   // onConnectionMessage, deliver streaming events to each of the callbacks bound to a channel id.
   function onConnectionMessage(event) {
 
-    // Access to private members.
-    var my = this._private;
-
-    var parser = new PrivateCourage.MessageParser(event.data);
+    var parser = new Courage._MessageParser(event.data);
 
     // Discard messages with unrecognized headers.
     var header = parser.readHeader();
@@ -174,7 +164,7 @@ TheNewTricks.Courage = (function(Courage) {
 
     // Parse the channel id and get the registered callback.
     var channelId = parser.readUUID();
-    var callback = my.handlers[TheNewTricks.UUID.unparse(channelId)].callback;
+    var callback = this._handlers[TheNewTricks.UUID.unparse(channelId)].callback;
 
     // For each event, deliver the event data.
     var numEvents = parser.readUint8();
