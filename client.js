@@ -18,7 +18,6 @@ TheNewTricks.Courage = (function(Courage) {
 
   var SUBSCRIBE_REQUEST_MESSAGE_TYPE = 1,
       SUBSCRIBE_SUCCESS_MESSAGE_TYPE = 2,
-      SUBSCRIBE_ERROR_MESSAGE_TYPE   = 3,
       SUBSCRIBE_DATA_MESSAGE_TYPE    = 4,
       ACK_EVENTS_MESSAGE_TYPE        = 5;
 
