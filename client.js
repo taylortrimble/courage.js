@@ -126,8 +126,9 @@ TheNewTricks.Courage = (function(Courage) {
   function subscribeToChannel(channelId, replay) {
 
       // Form the subscribe request.
-      var request = new Courage._MessageBuffer(SUBSCRIBE_PROTOCOL_ID, REQUEST_MESSAGE_TYPE);
+      var request = new Courage._MessageBuffer();
 
+      request.writeHeader(SUBSCRIBE_PROTOCOL_ID, REQUEST_MESSAGE_TYPE);
       request.writeString(this._dsn.username);
       request.writeString(this._dsn.password);
       request.writeUUID(this._dsn.providerId);
@@ -136,7 +137,7 @@ TheNewTricks.Courage = (function(Courage) {
       request.writeUint8(replay ? 1 : 0);
 
       // Send the subscribe request.
-      this._connectionManager.send(request.buffer().buffer);
+      this._connectionManager.send(request.buffer());
     }
 
   // onConnectionOpen, resubscribe to the channels we are bound to.
