@@ -58,6 +58,7 @@ TheNewTricks.Courage = (function(Courage) {
     bind: bind,
 
     _subscribeToChannels: subscribeToChannels,
+    _ackEvents: ackEvents,
     _onConnectionOpen: onConnectionOpen,
     _onConnectionMessage: onConnectionMessage,
     _onSubscribeSuccess: onSubscribeSuccess,
@@ -138,22 +139,37 @@ TheNewTricks.Courage = (function(Courage) {
     // Guard options.
     this.subscribeOptions = this.subscribeOptions || {};
 
-    // Form the subscribe request.
-    var request = new Courage._MessageBuffer();
+    // Form the SubscribeRequest message.
+    var message = new Courage._MessageBuffer();
+    message.writeHeader(SUBSCRIBE_PROTOCOL_ID, SUBSCRIBE_REQUEST_MESSAGE_TYPE);
 
-    request.writeHeader(SUBSCRIBE_PROTOCOL_ID, SUBSCRIBE_REQUEST_MESSAGE_TYPE);
-    request.writeUUID(this._dsn.providerId);
-    request.writeString(this._dsn.username);
-    request.writeString(this._dsn.password);
-    request.writeUUID(this._deviceId);
-    request.writeUint8(channelIds.length);
+    message.writeUUID(this._dsn.providerId);
+    message.writeString(this._dsn.username);
+    message.writeString(this._dsn.password);
+    message.writeUUID(this._deviceId);
+    message.writeUint8(channelIds.length);
     for (var i = 0; i < channelIds.length; i++) {
-      request.writeUUID(channelIds[i]);
+      message.writeUUID(channelIds[i]);
     }
-    request.writeUint8(this.subscribeOptions.replay ? SUBSCRIBE_OPTION_REPLAY : SUBSCRIBE_OPTION_DEFAULT);
+    message.writeUint8(this.subscribeOptions.replay ? SUBSCRIBE_OPTION_REPLAY : SUBSCRIBE_OPTION_DEFAULT);
 
-    // Send the subscribe request.
-    this._connectionManager.send(request.buffer());
+    // Send the SubscribeRequest.
+    this._connectionManager.send(message.buffer());
+  }
+
+  function ackEvents(eventIds) {
+
+    // Form the AckEvents message.
+    var message = new Courage._MessageBuffer();
+    message.writeHeader(SUBSCRIBE_PROTOCOL_ID, ACK_EVENTS_MESSAGE_TYPE);
+
+    message.writeUint8(eventIds.length);
+    for (var i = 0; i < eventIds.length; i++) {
+      message.writeUUID(eventIds[i]);
+    }
+
+    // Send the message.
+    this._connectionManager.send(message.buffer());
   }
 
   // onConnectionOpen, resubscribe to the channels we are bound to.
@@ -199,6 +215,9 @@ TheNewTricks.Courage = (function(Courage) {
   }
 
   function onSubscribeSuccess(parser) {
+
+    var eventIds = [];
+
     // Process each channel.
     var numChannels = parser.readUint8();
     for (var i = 0; i < numChannels; i++) {
@@ -212,8 +231,11 @@ TheNewTricks.Courage = (function(Courage) {
         var eventPayload = parser.readBlob();
 
         callback(eventPayload);
+        eventIds.push(eventId);
       }
     }
+
+    this._ackEvents(eventIds);
   }
 
   function onSubscribeData(parser) {
@@ -226,6 +248,7 @@ TheNewTricks.Courage = (function(Courage) {
     var eventPayload = parser.readBlob();
 
     callback(eventPayload);
+    this._ackEvents([eventId]);
   }
 
   return Courage;
