@@ -10,12 +10,17 @@ var TheNewTricks = TheNewTricks || {};
 
 TheNewTricks.Courage = (function(Courage) {
 
-  var DSN_KEYS               = 'username password host port providerId'.split(' '),
-      DSN_PATTERN            = /^([0-9a-z-]+):([0-9a-z-]+)@([0-9a-z-\.]+):([0-9]+)\/([0-9a-z-]+)$/i,
-      DEVICE_ID_KEY          = 'com.thenewtricks.courage.deviceId',
-      SUBSCRIBE_PROTOCOL_ID  = 1,
-      REQUEST_MESSAGE_TYPE   = 0,
-      STREAMING_MESSAGE_TYPE = 3;
+  var DSN_KEYS      = 'username password host port providerId'.split(' '),
+      DSN_PATTERN   = /^([0-9a-z-]+):([0-9a-z-]+)@([0-9a-z-\.]+):([0-9]+)\/([0-9a-z-]+)$/i,
+      DEVICE_ID_KEY = 'com.thenewtricks.courage.deviceId';
+
+  var SUBSCRIBE_PROTOCOL_ID = 1;
+
+  var SUBSCRIBE_REQUEST_MESSAGE_TYPE = 1,
+      SUBSCRIBE_SUCCESS_MESSAGE_TYPE = 2,
+      SUBSCRIBE_ERROR_MESSAGE_TYPE   = 3,
+      SUBSCRIBE_DATA_MESSAGE_TYPE    = 4,
+      ACK_EVENTS_MESSAGE_TYPE        = 5;
 
   // The Courage Client is used to subscribe to streaming events from the Courage service.
   //
@@ -47,6 +52,8 @@ TheNewTricks.Courage = (function(Courage) {
     _subscribeToChannel: subscribeToChannel,
     _onConnectionOpen: onConnectionOpen,
     _onConnectionMessage: onConnectionMessage,
+    _onSubscribeSuccess: onSubscribeSuccess,
+    _onSubscribeData: onSubscribeData,
   };
 
   // parseDSN converts a DSN string to its component parts.
@@ -128,12 +135,13 @@ TheNewTricks.Courage = (function(Courage) {
       // Form the subscribe request.
       var request = new Courage._MessageBuffer();
 
-      request.writeHeader(SUBSCRIBE_PROTOCOL_ID, REQUEST_MESSAGE_TYPE);
+      request.writeHeader(SUBSCRIBE_PROTOCOL_ID, SUBSCRIBE_REQUEST_MESSAGE_TYPE);
+      request.writeUUID(this._dsn.providerId);
       request.writeString(this._dsn.username);
       request.writeString(this._dsn.password);
-      request.writeUUID(this._dsn.providerId);
-      request.writeUUID(channelId);
       request.writeUUID(this._deviceId);
+      request.writeUint8(1); // TODO: Channels are one at a time right now.
+      request.writeUUID(channelId);
       request.writeUint8(replay ? 1 : 0);
 
       // Send the subscribe request.
@@ -159,20 +167,53 @@ TheNewTricks.Courage = (function(Courage) {
 
     // Discard messages with unrecognized headers.
     var header = parser.readHeader();
-    if (header.protocol !== SUBSCRIBE_PROTOCOL_ID || header.messageType !== STREAMING_MESSAGE_TYPE) {
+    if (header.protocol !== SUBSCRIBE_PROTOCOL_ID) {
       return;
     }
 
+    switch (header.messageType) {
+
+    case SUBSCRIBE_SUCCESS_MESSAGE_TYPE:
+      this._onSubscribeSuccess(parser);
+      break;
+
+    case SUBSCRIBE_DATA_MESSAGE_TYPE:
+      this._onSubscribeData(parser);
+      break;
+
+    default:
+      return;
+    }
+  }
+
+  function onSubscribeSuccess(parser) {
+    // Process each channel.
+    var numChannels = parser.readUint8();
+    for (var i = 0; i < numChannels; i++) {
+      var channelId = parser.readUUID();
+      var callback = this._handlers[TheNewTricks.UUID.unparse(channelId)].callback;
+
+      // Process each replayed event.
+      var numEvents = parser.readUint8();
+      for (var j = 0; j < numEvents; j++) {
+        var eventId = parser.readUUID();
+        var eventPayload = parser.readBlob();
+
+        callback(eventPayload);
+      }
+    }
+  }
+
+  function onSubscribeData(parser) {
     // Parse the channel id and get the registered callback.
     var channelId = parser.readUUID();
     var callback = this._handlers[TheNewTricks.UUID.unparse(channelId)].callback;
 
-    // For each event, deliver the event data.
-    var numEvents = parser.readUint8();
-    for (var i = 0; i < numEvents; i++) {
-      var data = parser.readBlob();
-      callback(data);
-    }
+    // Deliver the event data.
+    var eventId = parser.readUUID();
+    var eventPayload = parser.readBlob();
+
+    callback(eventPayload);
   }
 
   return Courage;

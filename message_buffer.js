@@ -31,6 +31,7 @@ TheNewTricks.Courage = (function(Courage) {
     writeHeader: writeHeader,
     writeUint8: writeUint8,
     writeUUID: writeUUID,
+    writeBlob: writeBlob,
     writeString: writeString,
 
     buffer: buffer,
@@ -40,7 +41,9 @@ TheNewTricks.Courage = (function(Courage) {
 
   // Write the protocol id and message type header to the buffer.
   function writeHeader(protocolId, messageType) {
-    this.writeUint8(protocolId << 4 + messageType);
+
+    var header = (protocolId << 4) + messageType
+    this.writeUint8(header);
   }
 
   // writeUint8 appends an 8-bit integer to the buffer.
@@ -55,7 +58,7 @@ TheNewTricks.Courage = (function(Courage) {
 
   // writeUUID appends a 16 byte UUID to the buffer.
   //
-  // `uuid` is a `Uint8Array`.
+  // writeUUID takes a Uint8Array.
   //
   // UUIDs are 16 bytes in big endian format, and are based on
   // RFC 4122 and DCE 1.1: Authentication and Security Services.
@@ -68,29 +71,40 @@ TheNewTricks.Courage = (function(Courage) {
     this._cursor += 16;
   }
 
+  // writeBlob appends a formatted data blob to the buffer.
+  //
+  // writeBlob takes an ArrayBuffer.
+  //
+  // A formatted data blob is two bytes in big endian format, which specifies the
+  // blob length, followed by the bytes of data. Blob data must be 65,535 bytes
+  // or fewer.
+  function writeBlob(data) {
+
+    this._grow(2 + data.byteLength);
+
+    // Create the ArrayBuffer views.
+    var bufferDataView = new DataView(this._buffer);
+    var bufferUint8View = new Uint8Array(this._buffer);
+    var dataUint8View = new Uint8Array(data);
+
+    // Write the string length header, followed by the string data.
+    bufferDataView.setUint16(this._cursor, data.byteLength);
+    this._cursor += 2;
+    bufferUint8View.set(dataUint8View, this._cursor);
+    this._cursor += data.byteLength;
+  }
+
   // writeString appends a formatted string to the buffer.
   //
-  // A formatted string is a single byte, which specifies the string length,
-  // followed by the bytes of the string. Strings must be smaller than 255 bytes,
-  // and may be UTF-8.
+  // A formatted string uses the same underlying format as a formatted data blob,
+  // but always contains UTF-8 data.
   function writeString(s) {
 
     // Encode the UTF-8 string.
     var encoder = new TextEncoder('utf-8');
-    var stringData = encoder.encode(s);
+    var stringData = encoder.encode(s).buffer;
 
-    // Grow the buffer by enough to hold the header and UTF-8 string data.
-    this._grow(1 + stringData.length);
-
-    // Create the ArrayBuffer views.
-    var dataView = new DataView(this._buffer);
-    var uint8View = new Uint8Array(this._buffer);
-
-    // Write the string length header, followed by the string data.
-    dataView.setUint8(this._cursor, stringData.length);
-    this._cursor += 1;
-    uint8View.set(stringData, this._cursor);
-    this._cursor += stringData.length;
+    this.writeBlob(stringData);
   }
 
   // buffer returns the raw, underlying ArrayBuffer.
