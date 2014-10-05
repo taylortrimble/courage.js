@@ -14,13 +14,22 @@ var dsn = 'sessionid:sessionkey@rt.thenewtricks.com:9090/928308cd-eff8-4ef6-a154
 var courage = new TheNewTricks.Courage.Client(dsn);
 ```
 
+You may optionally set `subscribeOptions` on the client to specify if undelivered messages should be replayed:
+
+```js
+courage.subscribeOptions = {replay: true};
+```
+
+By default, undelivered messages are not replayed and are therefore discarded by the service.
+
 Bind a callback function to a channel:
 
 ```js
 courage.bind('791f011e-7d16-4614-9e2f-1b28db45b7b3', function(data) {
 
+  var uint8Data = new Uint8Array(data);
   var decoder = new TextDecoder('utf-8');
-  var json = decoder.decode(data);
+  var json = decoder.decode(uint8Data);
 
   var object = JSON.parse(json);
 
@@ -28,17 +37,7 @@ courage.bind('791f011e-7d16-4614-9e2f-1b28db45b7b3', function(data) {
 });
 ```
 
-The above code decodes the binary data into a UTF-8 string, and parses a JSON object from it.
-
-You may optionally pass an `options` object as a third argument to bind, to specify if undelivered messages should be replayed:
-
-```js
-{
-  replay: true,
-}
-```
-
-By default, undelivered messages are not replayed and are therefore discarded by the service.
+The above callback decodes the binary data into a UTF-8 string, and parses a JSON object from it.
 
 ### Requirements
 
