@@ -1,0 +1,28 @@
+{
+  "name": "courage",
+  "version": "0.0.1",
+  "description": "A JavaScript client for the Courage realtime event service.",
+  "homepage": "https://github.com/thenewtricks/courage.js",
+  "main": [
+    "client.js",
+    "connection_manager.js",
+    "message_buffer.js",
+    "message_parser.js",
+    "uuid.js"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "realtime",
+    "event"
+  ],
+  "authors": [
+    "Taylor Trimble <taylor@thenewtricks.com>"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
