@@ -10,8 +10,9 @@ Basic Usage
 Create a client:
 
 ```js
-var dsn = 'sessionid:sessionkey@rt.thenewtricks.com:9090/928308cd-eff8-4ef6-a154-f8268ec663d5';
-var courage = new TheNewTricks.Courage.Client(dsn);
+var uri = 'wss://courage-service-staging.tntapp.co/v1/ws/';
+var providerId = '928308cd-eff8-4ef6-a154-f8268ec663d5';
+var courage = new TheNewTricks.Courage.Client(uri, providerId);
 ```
 
 You may optionally set `subscribeOptions` on the client to specify if undelivered messages should be replayed:
@@ -21,6 +22,14 @@ courage.subscribeOptions = {replay: true};
 ```
 
 By default, undelivered messages are not replayed and are therefore discarded by the service.
+
+Set authentication credentials:
+
+```js
+publicKey = 'publicKey';
+privateKey = 'ssssshSecret';
+courage.authenticate(publicKey, privateKey);
+```
 
 Bind a callback function to a channel:
 
@@ -49,26 +58,6 @@ The above callback decodes the binary data into a UTF-8 string, and parses a JSO
   - Safari 6 and 7
 - A [polyfill](https://github.com/inexorabletash/text-encoding) for TextEncoding and TextDecoding is required.
 
-
-### The DSN
-
-The Courage client is initialized with a DSN, a string that encodes the configuration information for the client. It contains:
-
-- Authorization public key (`username`)
-- Authorization private key (`password`)
-- Service hostname (`host`)
-- Service port (`port`)
-- The provider id of the provider we are interested in (`providerId`)
-
-The DSN is structured as follows:
-
-    {username}:{password}@{host}:{port}/{providerId}
-
-Here is an example:
-
-    sessionid:sessionkey@rt.thenewtricks.com:9090/928308cd-eff8-4ef6-a154-f8268ec663d5
-
-Currently, only one provider id per connection is supported.
 
 Notes
 -----

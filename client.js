@@ -10,9 +10,7 @@ var TheNewTricks = TheNewTricks || {};
 
 TheNewTricks.Courage = (function(Courage) {
 
-  var DSN_KEYS      = 'username password host port providerId'.split(' '),
-      DSN_PATTERN   = /^([0-9a-z-]+):([0-9a-z-]+)@([0-9a-z-\.]+):([0-9]+)\/([0-9a-z-]+)$/i,
-      DEVICE_ID_KEY = 'com.thenewtricks.courage.deviceId';
+  var DEVICE_ID_KEY = 'com.thenewtricks.courage.deviceId';
 
   var SUBSCRIBE_PROTOCOL_ID = 1;
 
@@ -26,27 +24,30 @@ TheNewTricks.Courage = (function(Courage) {
 
   // The Courage Client is used to subscribe to streaming events from the Courage service.
   //
-  // It is initially configured using a DSN, which contains authorization credentials, the location
-  // of the service, and the id of the provider for this app.
+  // It is initially configured with a websocket URI and provider id..
   //
-  // A DSN is structured as follows:
-  //     {username}:{password}@{host}:{port}/{providerId}
+  // Example URI:
+  //     wss://courage-service-staging.tntapp.co/v1/ws/
   //
-  // All fields are required. Here is an example:
-  //     sessionid:sessionkey@rt.thenewtricks.com:9090/928308cd-eff8-4ef6-a154-f8268ec663d5
+  // Example provider id:
+  //     928308cd-eff8-4ef6-a154-f8268ec663d5
   //
-  // Subscribe options can optionally be set:
+  // After initialization, subscribe options can optionally be set on the client:
   //     client.subscribeOptions = {replay: true};
+  //
+  // Before subscribing for events, authentication credentials must be set:
+  //     client.setAuth(publicKey, privateKey);
   //
   // Finally, the app can use the `bind` method to subscribe to events from a channel:
   //     client.bind('28955ba1-fc5d-4553-9d1b-c751d5110c82', function(data) { console.log(data); });
-  Courage.Client = function Client(dsn) {
+  Courage.Client = function Client(uri, providerId) {
 
     this.subscribeOptions = SUBSCRIBE_OPTION_DEFAULT;
 
-    // Parse the DSN, get the persistent device id, and initialize a data structure
-    // to map channel ids to callbacks.
-    this._dsn = parseDSN(dsn);
+    this._uri = uri;
+    this._providerId = TheNewTricks.UUID.parse(providerId);
+    this._publicKey = '';
+    this._privateKey = '';
     this._deviceId = persistentDeviceId();
     this._handlers = {};
     this._connectionManager = null;
@@ -54,6 +55,7 @@ TheNewTricks.Courage = (function(Courage) {
   
   Courage.Client.prototype = {
 
+    authenticate: authenticate,
     bind: bind,
 
     _subscribeToChannels: subscribeToChannels,
@@ -63,24 +65,6 @@ TheNewTricks.Courage = (function(Courage) {
     _onSubscribeSuccess: onSubscribeSuccess,
     _onSubscribeData: onSubscribeData,
   };
-
-  // parseDSN converts a DSN string to its component parts.
-  function parseDSN(dsn) {
-
-    var parsed = {};
-    var m = DSN_PATTERN.exec(dsn);
-    // TODO: fail if pattern fails to match.
-    // TODO: Validate auth strings length and valid parameters.
-
-    for (var i = 0; i < DSN_KEYS.length; i++) {
-      parsed[DSN_KEYS[i]] = m[i + 1] || '';
-    }
-
-    // Replace the providerId with a parsed version.
-    parsed.providerId = TheNewTricks.UUID.parse(parsed.providerId);
-
-    return parsed;
-  }
 
   // persistentDeviceId returns a UUID unique to this browser.
   //
@@ -97,6 +81,13 @@ TheNewTricks.Courage = (function(Courage) {
     return deviceId;
   }
 
+  // authenticate sets the public key and private key the Courage client will use as authentication
+  // for `bind` requests to the service.
+  function authenticate(publicKey, privateKey) {
+    this._publicKey = publicKey;
+    this._privateKey = privateKey;
+  }
+
   // The app can use the `bind` method of the Client to subscribe to events from a channel defined
   // by a channelId. All events that match that channelId will be fed to the callback function
   // registered with `bind`.
@@ -110,9 +101,7 @@ TheNewTricks.Courage = (function(Courage) {
     // If the connection manager isn't started, start it now.
     if (!this._connectionManager) {
 
-      var url = 'ws://' + this._dsn.host + ':' + this._dsn.port + '/';
-      this._connectionManager = new Courage._ConnectionManager(url);
-
+      this._connectionManager = new Courage._ConnectionManager(this._uri);
       this._connectionManager.onOpen = this._onConnectionOpen.bind(this);
       this._connectionManager.onMessage = this._onConnectionMessage.bind(this);
 
@@ -142,9 +131,9 @@ TheNewTricks.Courage = (function(Courage) {
     var message = new Courage._MessageBuffer();
     message.writeHeader(SUBSCRIBE_PROTOCOL_ID, SUBSCRIBE_REQUEST_MESSAGE_TYPE);
 
-    message.writeUUID(this._dsn.providerId);
-    message.writeString(this._dsn.username);
-    message.writeString(this._dsn.password);
+    message.writeUUID(this._providerId);
+    message.writeString(this._publicKey);
+    message.writeString(this._privateKey);
     message.writeUUID(this._deviceId);
     message.writeUint8(channelIds.length);
     for (var i = 0; i < channelIds.length; i++) {
