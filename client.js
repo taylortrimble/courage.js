@@ -57,6 +57,7 @@ TheNewTricks.Courage = (function(Courage) {
 
     authenticate: authenticate,
     bind: bind,
+    persistentDeviceId: persistentDeviceId,
 
     _subscribeToChannels: subscribeToChannels,
     _ackEvents: ackEvents,
