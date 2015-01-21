@@ -1,6 +1,6 @@
 {
   "name": "courage",
-  "version": "0.1",
+  "version": "0.2",
   "description": "A JavaScript client for the Courage realtime event service.",
   "homepage": "https://github.com/thenewtricks/courage.js",
   "main": [
